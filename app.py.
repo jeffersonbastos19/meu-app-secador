@@ -1,0 +1,86 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+# Configuração da Página
+st.set_page_config(page_title="Secador Grão de Ouro", layout="wide")
+
+# Estilo Visual (Azul Marinho e Dourado)
+st.markdown("""
+    <style>
+    .main { background-color: #001F3F; color: #D4AF37; }
+    .stMetric { background-color: #002d5c; padding: 15px; border-radius: 10px; border: 1px solid #D4AF37; }
+    div[data-testid="stMetricValue"] { color: #D4AF37 !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Inicialização de Dados (Simulados em memória)
+if 'vendas' not in st.session_state:
+    st.session_state.vendas = pd.DataFrame(columns=['Data', 'Cliente', 'Peso (ton)', 'Valor (R$)'])
+if 'despesas' not in st.session_state:
+    st.session_state.despesas = pd.DataFrame(columns=['Data', 'Desc', 'Valor (R$)'])
+
+# --- SISTEMA DE LOGIN ---
+if 'perfil' not in st.session_state:
+    st.title("🌟 Secador Grão de Ouro")
+    st.subheader("Login do Sistema")
+    perfil = st.selectbox("Selecione seu Perfil", ["Dono", "Gerente Produção", "Secretária", "Operador"])
+    senha = st.text_input("Senha", type="password")
+    if st.button("Entrar"):
+        if senha == "123": # Senha padrão para teste
+            st.session_state.perfil = perfil
+            st.rerun()
+        else:
+            st.error("Senha incorreta!")
+    st.stop()
+
+# --- MENU LATERAL ---
+st.sidebar.title(f"👤 {st.session_state.perfil}")
+if st.sidebar.button("Sair"):
+    del st.session_state.perfil
+    st.rerun()
+
+# --- TELAS POR PERFIL ---
+perfil = st.session_state.perfil
+
+if perfil == "Dono":
+    st.title("📊 Dashboard Executivo")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Saldo em Caixa", "R$ 145.200,00")
+    col2.metric("Lucro Líquido (Mês)", "R$ 42.150,00")
+    col3.metric("Quebra de Umidade", "14.2%")
+    
+    st.subheader("Fluxo de Caixa")
+    df_fluxo = pd.DataFrame({'Mês': ['Jan', 'Fev', 'Mar'], 'Receita': [120, 150, 130], 'Despesa': [80, 90, 85]})
+    fig = px.area(df_fluxo, x='Mês', y=['Receita', 'Despesa'], color_discrete_map={'Receita': '#D4AF37', 'Despesa': '#ef4444'})
+    st.plotly_chart(fig, use_container_width=True)
+
+elif perfil == "Gerente Produção":
+    st.title("⚙️ Controle de Produção")
+    st.subheader("Calculadora de Peso Seco")
+    p_bruto = st.number_input("Peso Bruto (ton)", value=30.0)
+    umidade = st.number_input("Umidade (%)", value=15.0)
+    p_seco = p_bruto / (1 + (umidade/100))
+    st.success(f"Peso Seco Estimado: {p_seco:.2f} toneladas")
+    
+    st.subheader("Eficiência do Forno")
+    st.info("Temperatura Atual: 185°C | Consumo Cavaco: 115kg/ton")
+
+elif perfil == "Secretária":
+    st.title("📝 Lançamentos Financeiros")
+    with st.form("venda"):
+        st.subheader("Nova Nota de Venda")
+        cliente = st.text_input("Cliente")
+        valor = st.number_input("Valor Total (R$)")
+        if st.form_submit_button("Emitir Nota"):
+            st.success("Venda registrada e estoque atualizado!")
+
+elif perfil == "Operador":
+    st.title("🚛 Entrada de Cargas")
+    st.subheader("Registrar Novo Caminhão")
+    placa = st.text_input("Placa")
+    peso = st.number_input("Peso Bruto (ton)")
+    umidade_pátio = st.slider("Umidade Medida (%)", 10, 40)
+    if st.button("Salvar Entrada"):
+        st.warning("Carga registrada. Aguardando descarga.")
